@@ -28,6 +28,7 @@ serde = { version = "1", features = ["derive"] }
 toml = "0.8"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+dashmap = "6"
 
 [build-dependencies]
 anyhow = { workspace = true }
@@ -46,6 +47,10 @@ cargo_metadata = { workspace = true }
 # workflows with stable cargo; stable cargo outright refuses to load manifests that use unstable
 # features.
 netflow-ebpf = { path = "../netflow-ebpf" }
+
+[lib]
+name = "netflow"
+path = "src/lib.rs"
 
 [[bin]]
 name = "netflow"

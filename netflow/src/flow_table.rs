@@ -84,51 +84,6 @@ impl FlowTable {
             self.flows.remove(&key);
         }
     }
-
-    /// Incrementally update flow stats from a captured packet.
-    ///
-    /// If the flow already exists, accumulates `bytes` and increments the
-    /// packet counter in the appropriate direction (`sent` or `recv`).
-    /// If the flow does not exist, creates a new `Active` entry with the
-    /// initial counters set from this packet.
-    pub fn upsert_packet(&self, key: FlowKey, bytes: u64, is_sent: bool) {
-        use dashmap::mapref::entry::Entry;
-        match self.flows.entry(key) {
-            Entry::Occupied(mut e) => {
-                let entry = e.get_mut();
-                if is_sent {
-                    entry.stats.packets_sent += 1;
-                    entry.stats.bytes_sent += bytes;
-                } else {
-                    entry.stats.packets_recv += 1;
-                    entry.stats.bytes_recv += bytes;
-                }
-                entry.last_seen = Instant::now();
-            }
-            Entry::Vacant(e) => {
-                let (packets_sent, packets_recv, bytes_sent, bytes_recv) = if is_sent {
-                    (1, 0, bytes, 0)
-                } else {
-                    (0, 1, 0, bytes)
-                };
-                let entry = FlowEntry {
-                    key,
-                    stats: FlowStats {
-                        packets_sent,
-                        packets_recv,
-                        bytes_sent,
-                        bytes_recv,
-                        ts_start_ns: 0,
-                        ts_last_ns: 0,
-                    },
-                    state: FlowState::Active,
-                    created_at: Instant::now(),
-                    last_seen: Instant::now(),
-                };
-                e.insert(entry);
-            }
-        }
-    }
 }
 
 #[cfg(test)]
@@ -206,44 +161,5 @@ mod tests {
         });
         table.gc_closed(Duration::from_secs(0));
         assert!(table.get_flow(&key).is_none());
-    }
-
-    #[test]
-    fn test_upsert_packet_creates_new_flow() {
-        let table = FlowTable::new();
-        let key = test_key();
-        table.upsert_packet(key, 100, true);
-        let flow = table.get_flow(&key).unwrap();
-        assert_eq!(flow.state, FlowState::Active);
-        assert_eq!(flow.stats.packets_sent, 1);
-        assert_eq!(flow.stats.bytes_sent, 100);
-        assert_eq!(flow.stats.packets_recv, 0);
-        assert_eq!(flow.stats.bytes_recv, 0);
-    }
-
-    #[test]
-    fn test_upsert_packet_updates_existing_flow() {
-        let table = FlowTable::new();
-        let key = test_key();
-        table.upsert_packet(key, 100, true);
-        table.upsert_packet(key, 200, false);
-        let flow = table.get_flow(&key).unwrap();
-        assert_eq!(flow.stats.packets_sent, 1);
-        assert_eq!(flow.stats.bytes_sent, 100);
-        assert_eq!(flow.stats.packets_recv, 1);
-        assert_eq!(flow.stats.bytes_recv, 200);
-    }
-
-    #[test]
-    fn test_upsert_packet_creates_new_recv_flow() {
-        let table = FlowTable::new();
-        let key = test_key();
-        table.upsert_packet(key, 300, false);
-        let flow = table.get_flow(&key).unwrap();
-        assert_eq!(flow.state, FlowState::Active);
-        assert_eq!(flow.stats.packets_sent, 0);
-        assert_eq!(flow.stats.bytes_sent, 0);
-        assert_eq!(flow.stats.packets_recv, 1);
-        assert_eq!(flow.stats.bytes_recv, 300);
     }
 }
