@@ -6,7 +6,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-netflow-common = { path = "../netflow-common", features = ["user"] }
+netflow-common = { path = "../netflow-common", features = ["userspace"] }
 
 anyhow = { workspace = true, default-features = true }
 aya = { workspace = true }
