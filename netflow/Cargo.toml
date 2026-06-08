@@ -9,8 +9,6 @@ license.workspace = true
 netflow-common = { path = "../netflow-common", features = ["userspace"] }
 
 anyhow = { workspace = true, default-features = true }
-aya = { workspace = true }
-aya-log = { workspace = true }
 env_logger = { workspace = true }
 libc = { workspace = true }
 log = { workspace = true }
@@ -35,9 +33,17 @@ hex = "0.4"
 ratatui = "0.29"
 crossterm = "0.28"
 futures = "0.3"
+async-trait = "0.1"
+pcap = { version = "2", features = ["capture-stream"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+aya = { workspace = true }
+aya-log = { workspace = true }
 
 [build-dependencies]
 anyhow = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.build-dependencies]
 aya-build = { workspace = true }
 cargo_metadata = { workspace = true }
 # TODO(https://github.com/rust-lang/cargo/issues/12375): this should be an artifact dependency, but

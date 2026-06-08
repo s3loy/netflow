@@ -5,15 +5,16 @@ use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
 
 mod api;
+mod collector;
 mod config;
-mod ebpf_loader;
 mod flow_table;
-mod iterator_poll;
-mod ringbuf_poll;
 mod tui;
 
+#[cfg(target_os = "linux")]
+mod ebpf_loader;
+
+use collector::Collector;
 use config::{Cli, Config};
-use ebpf_loader::EbpfLoader;
 use flow_table::FlowTable;
 
 #[tokio::main]
@@ -27,15 +28,27 @@ async fn main() -> anyhow::Result<()> {
     let config = Config::load(&cli.config)?;
     info!("loaded config from {:?}", cli.config);
 
-    let mut loader = EbpfLoader::load(&config)?;
     let flow_table = Arc::new(FlowTable::new());
 
+    // Platform-aware backend selection.
+    #[cfg(target_os = "linux")]
+    let collector: Arc<dyn Collector> = {
+        let c = collector::ebpf::EbpfCollector::new(&config)?;
+        Arc::new(c)
+    };
+    #[cfg(not(target_os = "linux"))]
+    let collector: Arc<dyn Collector> = {
+        let c = collector::pcap::PcapCollector::new(&config)?;
+        Arc::new(c)
+    };
+
     let mut handles = vec![
-        tokio::spawn(ringbuf_poll::poll_ringbuf(
-            &mut loader.bpf,
-            flow_table.clone(),
-        )),
-        tokio::spawn(api::serve(flow_table.clone(), &config)),
+        {
+            let c = Arc::clone(&collector);
+            let ft = Arc::clone(&flow_table);
+            tokio::spawn(async move { c.run(ft).await })
+        },
+        tokio::spawn(api::serve(flow_table.clone(), config.clone())),
     ];
 
     if cli.tui {
