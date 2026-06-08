@@ -4,3 +4,4 @@ pub mod ebpf_loader;
 pub mod flow_table;
 pub mod iterator_poll;
 pub mod ringbuf_poll;
+pub mod tui;
