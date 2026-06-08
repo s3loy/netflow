@@ -20,7 +20,15 @@ tokio = { workspace = true, features = [
     "rt-multi-thread",
     "net",
     "signal",
+    "fs",
+    "time",
 ] }
+clap = { workspace = true, features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
 [build-dependencies]
 anyhow = { workspace = true }
 aya-build = { workspace = true }
