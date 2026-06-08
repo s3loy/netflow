@@ -9,7 +9,7 @@ use crate::flow_table::FlowTable;
 mod flows;
 mod metrics;
 
-pub async fn serve(flow_table: Arc<FlowTable>, config: Config) -> anyhow::Result<()> {
+pub async fn serve(flow_table: Arc<FlowTable>, config: &Config) -> anyhow::Result<()> {
     let app = Router::new()
         .route("/healthz", get(healthz))
         .route("/flows", get(flows::list_flows))
