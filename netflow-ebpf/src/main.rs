@@ -56,6 +56,7 @@ fn try_netflow_tcp_set_state(ctx: ProbeContext) -> Result<u32, u32> {
     Ok(0)
 }
 
+#[inline(always)]
 fn extract_tcp_5tuple(sk: *mut core::ffi::c_void) -> Result<FlowKey, u32> {
     let sk = sk as *const u8;
     let src_ip = unsafe { core::ptr::read_unaligned(sk.add(4) as *const u32) };
@@ -80,6 +81,66 @@ fn push_event(ty: FlowEventType, key: FlowKey, stats: FlowStats) -> Result<(), u
     } else {
         Err(1)
     }
+}
+
+#[kprobe]
+pub fn netflow_tcp_cleanup_rbuf(ctx: ProbeContext) -> u32 {
+    match try_netflow_tcp_cleanup_rbuf(ctx) {
+        Ok(ret) => ret,
+        Err(_) => 1,
+    }
+}
+
+fn try_netflow_tcp_cleanup_rbuf(ctx: ProbeContext) -> Result<u32, u32> {
+    let sk: *mut core::ffi::c_void = ctx.arg(0).ok_or(1u32)?;
+    let copied: i32 = ctx.arg(1).ok_or(1u32)?;
+
+    if copied <= 0 {
+        return Ok(0);
+    }
+
+    let key = extract_tcp_5tuple(sk)?;
+    let now = unsafe { aya_ebpf::helpers::bpf_ktime_get_ns() };
+
+    if let Some(stats) = FLOW_STATS.get_ptr_mut(&key) {
+        unsafe {
+            (*stats).bytes_recv += copied as u64;
+            (*stats).packets_recv += 1;
+            (*stats).ts_last_ns = now;
+        }
+    }
+
+    Ok(0)
+}
+
+#[kprobe]
+pub fn netflow_tcp_sendmsg(ctx: ProbeContext) -> u32 {
+    match try_netflow_tcp_sendmsg(ctx) {
+        Ok(ret) => ret,
+        Err(_) => 1,
+    }
+}
+
+fn try_netflow_tcp_sendmsg(ctx: ProbeContext) -> Result<u32, u32> {
+    let sk: *mut core::ffi::c_void = ctx.arg(0).ok_or(1u32)?;
+    let size: usize = ctx.arg(2).ok_or(1u32)?;
+
+    if size == 0 {
+        return Ok(0);
+    }
+
+    let key = extract_tcp_5tuple(sk)?;
+    let now = unsafe { aya_ebpf::helpers::bpf_ktime_get_ns() };
+
+    if let Some(stats) = FLOW_STATS.get_ptr_mut(&key) {
+        unsafe {
+            (*stats).bytes_sent += size as u64;
+            (*stats).packets_sent += 1;
+            (*stats).ts_last_ns = now;
+        }
+    }
+
+    Ok(0)
 }
 
 #[panic_handler]
