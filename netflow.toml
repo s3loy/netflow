@@ -1,0 +1,8 @@
+api_bind = "0.0.0.0:8080"
+interface = "eth0"
+udp_timeout_secs = 60
+max_flow_entries = 65536
+iterator_interval_secs = 5
+gc_interval_secs = 30
+closed_retention_secs = 30
+ringbuf_size_kb = 256
