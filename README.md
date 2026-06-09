@@ -3,7 +3,7 @@
 A terminal network flow monitor built with eBPF and Rust. Think `iftop` meets `bandwhich` — but with flow state tracking, a scrollable TUI, and an HTTP API for pulling live data.
 
 ```
-cargo run --release -- --tui
+cargo run --release --tui
 ```
 
 ## What it does
@@ -19,10 +19,10 @@ There's also a lightweight HTTP API on `:8080` (configurable) if you want to pul
 ```bash
 # 1. Copy the example config and edit the interface
 cp netflow.example.toml netflow.toml
-# edit netflow.toml → set interface to your NIC (e.g. eth0, en0)
+# edit netflow.toml → set interface to your NIC
 
 # 2. Run with the TUI
-cargo run --release -- --tui
+cargo run --release --tui
 
 # 3. Or run headless with just the API
 cargo run --release
