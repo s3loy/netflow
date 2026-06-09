@@ -13,6 +13,7 @@ pub struct Cli {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct Config {
     #[serde(default = "default_api_bind")]
     pub api_bind: SocketAddr,

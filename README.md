@@ -16,6 +16,27 @@ Use `cargo build`, `cargo check`, etc. as normal. Run your program with:
 cargo run --release
 ```
 
+### Terminal UI
+
+Run with the `--tui` flag to launch an interactive terminal dashboard:
+
+```shell
+cargo run --release -- --tui
+```
+
+| Key | List State | Modal State |
+|-----|-----------|-------------|
+| `j` / `↓` | Move cursor down | Scroll detail down |
+| `k` / `↑` | Move cursor up | Scroll detail up |
+| `PgDown` | Page down | Detail page down |
+| `PgUp` | Page up | Detail page up |
+| `g` | Jump to top | Jump to detail top |
+| `G` | Jump to bottom | Jump to detail bottom |
+| `Enter` | Open detail modal | Close modal |
+| `Esc` | Open detail modal | Close modal |
+| `q` / `Ctrl+C` / `Ctrl+D` | Quit | Close modal |
+| `Cmd+C` / `Cmd+Q` (macOS) | Quit | Close modal |
+
 Cargo build scripts are used to automatically build the eBPF correctly and include it in the
 program.
 

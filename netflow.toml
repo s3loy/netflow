@@ -1,5 +1,5 @@
 api_bind = "0.0.0.0:8080"
-interface = "eth0"
+interface = "en0"
 udp_timeout_secs = 60
 max_flow_entries = 65536
 iterator_interval_secs = 5
