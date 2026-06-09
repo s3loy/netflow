@@ -1,77 +1,91 @@
 # netflow
 
-## Prerequisites
+A terminal network flow monitor built with eBPF and Rust. Think `iftop` meets `bandwhich` — but with flow state tracking, a scrollable TUI, and an HTTP API for pulling live data.
 
-1. stable rust toolchains: `rustup toolchain install stable`
-1. nightly rust toolchains: `rustup toolchain install nightly --component rust-src`
-1. (if cross-compiling) rustup target: `rustup target add ${ARCH}-unknown-linux-musl`
-1. (if cross-compiling) LLVM: (e.g.) `brew install llvm` (on macOS)
-1. bpf-linker: `cargo install bpf-linker` (`--no-default-features` on macOS)
-
-## Build & Run
-
-Use `cargo build`, `cargo check`, etc. as normal. Run your program with:
-
-```shell
-cargo run --release
 ```
-
-### Terminal UI
-
-Run with the `--tui` flag to launch an interactive terminal dashboard:
-
-```shell
 cargo run --release -- --tui
 ```
 
-| Key | List State | Modal State |
-|-----|-----------|-------------|
-| `j` / `↓` | Move cursor down | Scroll detail down |
-| `k` / `↑` | Move cursor up | Scroll detail up |
-| `PgDown` | Page down | Detail page down |
-| `PgUp` | Page up | Detail page up |
-| `g` | Jump to top | Jump to detail top |
-| `G` | Jump to bottom | Jump to detail bottom |
-| `Enter` | Open detail modal | Close modal |
-| `Esc` | Open detail modal | Close modal |
-| `q` / `Ctrl+C` / `Ctrl+D` | Quit | Close modal |
-| `Cmd+C` / `Cmd+Q` (macOS) | Quit | Close modal |
+## What it does
 
-Cargo build scripts are used to automatically build the eBPF correctly and include it in the
-program.
+netflow captures live TCP/UDP traffic from a network interface and tracks each bidirectional flow: packets, bytes, duration, and state (active or closed). On Linux it uses eBPF for zero-overhead kernel tracing; on macOS it falls back to libpcap.
 
-## Cross-compiling on macOS
+The TUI gives you a real-time dashboard. Arrow keys or `j`/`k` to move, `Enter` to inspect a flow, `q` to quit. It handles thousands of flows without breaking a sweat.
 
-Cross compilation should work on both Intel and Apple Silicon Macs.
+There's also a lightweight HTTP API on `:8080` (configurable) if you want to pull flow data into your own tooling.
 
-```shell
+## Quick start
+
+```bash
+# 1. Copy the example config and edit the interface
+cp netflow.example.toml netflow.toml
+# edit netflow.toml → set interface to your NIC (e.g. eth0, en0)
+
+# 2. Run with the TUI
+cargo run --release -- --tui
+
+# 3. Or run headless with just the API
+cargo run --release
+```
+
+## Building
+
+**Linux (eBPF, recommended):**
+```bash
+rustup toolchain install nightly --component rust-src
+cargo install bpf-linker
+cargo build --release
+```
+
+**macOS (libpcap fallback):**
+```bash
+cargo build --release
+```
+
+## TUI key bindings
+
+- `↑`/`↓` or `j`/`k` — move cursor
+- `Enter` — open flow details
+- `Esc` — close detail panel
+- `PgUp`/`PgDown` — page through the list
+- `g` / `G` — jump to top / bottom
+- `q` or `Ctrl+C` — quit
+
+Detail panel uses the same navigation keys to scroll long flow info.
+
+## Config
+
+netflow reads `netflow.toml` at startup. Key fields:
+
+- `interface` — NIC to capture on (required)
+- `api_bind` — HTTP API listen address
+- `udp_timeout_secs` — how long before an idle UDP flow is timed out
+- `gc_interval_secs` — how often to clean up closed flows
+
+See `netflow.example.toml` for the full set.
+
+## Cross-compiling (macOS → Linux)
+
+```bash
 cargo build --package netflow --release \
   --target=${ARCH}-unknown-linux-musl \
   --config=target.${ARCH}-unknown-linux-musl.linker=\"rust-lld\"
 ```
-The cross-compiled program `target/${ARCH}-unknown-linux-musl/release/netflow` can be
-copied to a Linux server or VM and run there.
 
 ## License
 
-With the exception of eBPF code, netflow is distributed under the terms
-of either the [MIT license] or the [Apache License] (version 2.0), at your
-option.
+With the exception of eBPF code, this project is dual-licensed under either of
+- [MIT license](LICENSE-MIT)
+- [Apache License, Version 2.0](LICENSE-APACHE)
 
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in this crate by you, as defined in the Apache-2.0 license, shall
-be dual licensed as above, without any additional terms or conditions.
+at your option.
 
 ### eBPF
 
-All eBPF code is distributed under either the terms of the
-[GNU General Public License, Version 2] or the [MIT license], at your
-option.
+eBPF code is distributed under either the terms of the
+[GNU General Public License, Version 2](LICENSE-GPL2) or the
+[MIT license](LICENSE-MIT), at your option.
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in this project by you, as defined in the GPL-2 license, shall be
+for inclusion in this project by you, as defined in the GPL-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
-
-[Apache license]: LICENSE-APACHE
-[MIT license]: LICENSE-MIT
-[GNU General Public License, Version 2]: LICENSE-GPL2
