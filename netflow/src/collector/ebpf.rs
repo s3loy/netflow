@@ -1,13 +1,13 @@
 use std::sync::Arc;
+
 use async_trait::async_trait;
 use tokio::sync::Mutex;
 use tracing::info;
 
-use crate::collector::Collector;
-use crate::config::Config;
-use crate::ebpf_loader::EbpfLoader;
-use crate::flow_table::FlowTable;
-use crate::ringbuf_poll;
+use crate::{
+    collector::Collector, config::Config, ebpf_loader::EbpfLoader, flow_table::FlowTable,
+    ringbuf_poll,
+};
 
 /// Linux-only collector backed by eBPF kprobes.
 ///

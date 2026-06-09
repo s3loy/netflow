@@ -1,15 +1,19 @@
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
+
 use async_trait::async_trait;
 use netflow_common::{FlowEvent, FlowEventType, FlowKey};
 use pcap::{Capture, Device};
-use tokio::task::JoinHandle;
-use tokio::time::interval;
+use tokio::{task::JoinHandle, time::interval};
 use tracing::{debug, error, info, warn};
 
-use crate::collector::Collector;
-use crate::config::Config;
-use crate::flow_table::{FlowState, FlowTable};
+use crate::{
+    collector::Collector,
+    config::Config,
+    flow_table::{FlowState, FlowTable},
+};
 
 /// Cross-platform collector using libpcap.
 ///
@@ -35,7 +39,13 @@ impl PcapCollector {
         if local_ips.is_empty() {
             warn!("could not enumerate local IPs; all packets will be treated as received");
         }
-        info!("pcap local IPs: {:?}", local_ips.iter().map(|ip| format_ip(*ip)).collect::<Vec<_>>());
+        info!(
+            "pcap local IPs: {:?}",
+            local_ips
+                .iter()
+                .map(|ip| format_ip(*ip))
+                .collect::<Vec<_>>()
+        );
 
         Ok(Self {
             device: config.interface.clone(),
@@ -58,8 +68,7 @@ impl PcapCollector {
         let dev = Device::lookup()?.ok_or_else(|| anyhow::anyhow!("no pcap device available"))?;
         warn!(
             "device '{}' not found, falling back to '{}'",
-            self.device,
-            dev.name
+            self.device, dev.name
         );
         Ok(dev)
     }
@@ -71,9 +80,7 @@ impl Collector for PcapCollector {
         let device = self.resolve_device()?;
         info!("pcap opening device: {}", device.name);
 
-        let mut cap = Capture::from_device(device)?
-            .immediate_mode(true)
-            .open()?;
+        let mut cap = Capture::from_device(device)?.immediate_mode(true).open()?;
 
         cap.filter("ip and (tcp or udp)", true)
             .map_err(|e| anyhow::anyhow!("pcap filter error: {}", e))?;
@@ -83,8 +90,8 @@ impl Collector for PcapCollector {
         // Spawn blocking packet capture loop.
         let local_ips = self.local_ips.clone();
         let flow_table_capture = flow_table.clone();
-        let mut capture_handle: JoinHandle<anyhow::Result<()>> = tokio::task::spawn_blocking(
-            move || -> anyhow::Result<()> {
+        let mut capture_handle: JoinHandle<anyhow::Result<()>> =
+            tokio::task::spawn_blocking(move || -> anyhow::Result<()> {
                 loop {
                     match cap.next_packet() {
                         Ok(packet) => {
@@ -110,8 +117,7 @@ impl Collector for PcapCollector {
                     }
                 }
                 Ok(())
-            },
-        );
+            });
 
         // Async side: UDP timeout detection + GC.
         let mut gc_tick = interval(self.gc_interval);
@@ -234,9 +240,7 @@ unsafe fn get_local_ips() -> Vec<u32> {
     let mut addr = ifaddrs;
     while !addr.is_null() {
         let ifa = unsafe { &*addr };
-        if !ifa.ifa_addr.is_null()
-            && unsafe { (*ifa.ifa_addr).sa_family as i32 } == libc::AF_INET
-        {
+        if !ifa.ifa_addr.is_null() && unsafe { (*ifa.ifa_addr).sa_family as i32 } == libc::AF_INET {
             let sin = unsafe { &*(ifa.ifa_addr as *const libc::sockaddr_in) };
             ips.push(u32::from_be(sin.sin_addr.s_addr));
         }
@@ -271,7 +275,6 @@ fn format_key(key: &FlowKey) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use netflow_common::FlowKey;
 
     /// Build a minimal Ethernet/IPv4/TCP packet byte slice for testing.
     fn build_tcp_packet(src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16) -> Vec<u8> {

@@ -1,14 +1,19 @@
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
-use crossterm::event::Event;
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
-use ratatui::{
-    backend::CrosstermBackend,
-    Terminal,
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
 };
+
+use crossterm::{
+    event::Event,
+    terminal::{disable_raw_mode, enable_raw_mode},
+};
+use ratatui::{Terminal, backend::CrosstermBackend};
 use tokio::time::interval;
 use tracing::{info, warn};
+
 use crate::flow_table::FlowTable;
 
 mod app;

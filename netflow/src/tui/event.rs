@@ -1,4 +1,5 @@
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
+
 use super::app::Action;
 
 pub fn handle_event(event: Event) -> Action {
@@ -12,7 +13,9 @@ pub fn handle_event(event: Event) -> Action {
 fn handle_key(key: KeyEvent) -> Action {
     // Ctrl+C / Cmd+C (macOS) always quits
     if key.code == KeyCode::Char('c')
-        && key.modifiers.intersects(KeyModifiers::CONTROL | KeyModifiers::SUPER)
+        && key
+            .modifiers
+            .intersects(KeyModifiers::CONTROL | KeyModifiers::SUPER)
     {
         return Action::Quit;
     }
@@ -28,7 +31,10 @@ fn handle_key(key: KeyEvent) -> Action {
     }
 
     // Ignore keys with Ctrl/Alt/Super modifiers (except the combos handled above)
-    if key.modifiers.intersects(KeyModifiers::CONTROL | KeyModifiers::ALT | KeyModifiers::SUPER) {
+    if key
+        .modifiers
+        .intersects(KeyModifiers::CONTROL | KeyModifiers::ALT | KeyModifiers::SUPER)
+    {
         return Action::None;
     }
 
@@ -57,7 +63,7 @@ pub fn modal_action(action: Action) -> Action {
         Action::Top => Action::ModalTop,
         Action::Bottom => Action::ModalBottom,
         Action::ToggleModal => Action::ToggleModal, // Enter/Esc toggles modal
-        Action::Quit => Action::ToggleModal,         // q/Ctrl+C closes modal
+        Action::Quit => Action::ToggleModal,        // q/Ctrl+C closes modal
         other => other,
     }
 }

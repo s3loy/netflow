@@ -40,6 +40,9 @@ pcap = { version = "2", features = ["capture-stream"] }
 aya = { workspace = true }
 aya-log = { workspace = true }
 
+[dev-dependencies]
+tempfile = "3"
+
 [build-dependencies]
 anyhow = { workspace = true }
 

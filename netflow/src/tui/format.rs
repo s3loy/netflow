@@ -124,3 +124,86 @@ pub fn avg_pkt_size(bytes: u64, packets: u64) -> String {
         None => "-".to_string(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_proto_str() {
+        assert_eq!(proto_str(6), "TCP");
+        assert_eq!(proto_str(17), "UDP");
+        assert_eq!(proto_str(1), "Other");
+        assert_eq!(proto_str(255), "Other");
+    }
+
+    #[test]
+    fn test_ip_str() {
+        assert_eq!(ip_str(0x08080808), "8.8.8.8");
+        assert_eq!(ip_str(0x0A000001), "10.0.0.1");
+        assert_eq!(ip_str(0x7F000001), "127.0.0.1");
+        assert_eq!(ip_str(0), "0.0.0.0");
+        assert_eq!(ip_str(0xFFFFFFFF), "255.255.255.255");
+    }
+
+    #[test]
+    fn test_format_bytes() {
+        assert_eq!(format_bytes(0), "0 B");
+        assert_eq!(format_bytes(500), "500 B");
+        assert_eq!(format_bytes(1_000), "1.00 KB");
+        assert_eq!(format_bytes(1_500_000), "1.50 MB");
+        assert_eq!(format_bytes(2_000_000_000), "2.00 GB");
+    }
+
+    #[test]
+    fn test_format_bytes_compact() {
+        assert_eq!(format_bytes_compact(0), "0");
+        assert_eq!(format_bytes_compact(999), "999");
+        assert_eq!(format_bytes_compact(1_000), "1.0K");
+        assert_eq!(format_bytes_compact(1_500_000), "1.5M");
+        assert_eq!(format_bytes_compact(2_000_000_000), "2.0G");
+    }
+
+    #[test]
+    fn test_format_duration() {
+        assert_eq!(format_duration(0), "0s");
+        assert_eq!(format_duration(45), "45s");
+        assert_eq!(format_duration(125), "2m 5s");
+        assert_eq!(format_duration(3661), "1h 1m 1s");
+        assert_eq!(format_duration(90061), "1d 1h 1m 1s");
+    }
+
+    #[test]
+    fn test_port_name() {
+        assert_eq!(port_name(22), Some("SSH"));
+        assert_eq!(port_name(80), Some("HTTP"));
+        assert_eq!(port_name(443), Some("HTTPS"));
+        assert_eq!(port_name(3306), Some("MySQL"));
+        assert_eq!(port_name(9999), None);
+        assert_eq!(port_name(0), None);
+    }
+
+    #[test]
+    fn test_format_pps() {
+        assert_eq!(format_pps(100, 0), "-");
+        assert_eq!(format_pps(100, 10), "10.0pps");
+        assert_eq!(format_pps(5_000, 1), "5.0Kpps");
+        assert_eq!(format_pps(2_000_000, 1), "2.0Mpps");
+    }
+
+    #[test]
+    fn test_format_bps() {
+        assert_eq!(format_bps(100, 0), "-");
+        // 100 bytes * 8 / 10s = 80 bps
+        assert_eq!(format_bps(100, 10), "80 bps");
+        // 125_000 bytes * 8 / 1s = 1_000_000 bps = 1 Mbps
+        assert_eq!(format_bps(125_000, 1), "1.00 Mbps");
+    }
+
+    #[test]
+    fn test_avg_pkt_size() {
+        assert_eq!(avg_pkt_size(1500, 10), "150 B");
+        assert_eq!(avg_pkt_size(0, 5), "0 B");
+        assert_eq!(avg_pkt_size(100, 0), "-");
+    }
+}

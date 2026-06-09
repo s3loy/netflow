@@ -12,7 +12,7 @@ else
 	SED_IN_PLACE := sed -i
 endif
 
-.PHONY: all build release check test clean fmt clippy run run-tui run-api \
+.PHONY: all build release check test test-all test-integration clean fmt clippy run run-tui run-api \
         config-macos config-linux health flows metrics help
 
 all: release
@@ -29,8 +29,14 @@ release: ## Release build
 check: ## Fast cargo check
 	cargo check
 
-test: ## Run tests
-	cargo test
+test: ## Run unit tests (no root required)
+	cargo test --lib
+
+test-all: ## Run all tests including ignored (requires root)
+	$(RUN_PREFIX) cargo test
+
+test-integration: ## Run integration tests only (requires root)
+	$(RUN_PREFIX) cargo test -- --ignored
 
 clean: ## Clean build artifacts
 	cargo clean

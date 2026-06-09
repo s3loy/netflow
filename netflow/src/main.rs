@@ -1,8 +1,8 @@
 use std::sync::Arc;
+
 use clap::Parser;
-use tokio::signal;
-use tokio::task::JoinHandle;
-use tracing::{error, info, Level};
+use tokio::{signal, task::JoinHandle};
+use tracing::{Level, error, info};
 use tracing_subscriber::FmtSubscriber;
 
 mod api;
@@ -108,10 +108,8 @@ async fn main() -> anyhow::Result<()> {
 
     // Give tasks a moment to clean up (e.g. TUI restoring terminal state).
     // Avoid re-awaiting a handle that was already consumed by the select branch.
-    if let Some(h) = tui_handle {
-        if !h.is_finished() {
-            let _ = tokio::time::timeout(std::time::Duration::from_millis(500), h).await;
-        }
+    if let Some(h) = tui_handle.filter(|h| !h.is_finished()) {
+        let _ = tokio::time::timeout(std::time::Duration::from_millis(500), h).await;
     }
 
     // Final safety net: ensure raw mode is disabled even if TUI task was

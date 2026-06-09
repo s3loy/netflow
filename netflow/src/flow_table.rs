@@ -1,6 +1,8 @@
 use std::time::{Duration, Instant};
+
 use dashmap::DashMap;
-use netflow_common::{FlowEvent, FlowEventType, FlowKey, FlowStats};
+pub use netflow_common::FlowStats;
+use netflow_common::{FlowEvent, FlowEventType, FlowKey};
 use tracing::debug;
 
 #[derive(Debug, Clone)]
@@ -22,11 +24,17 @@ pub struct FlowTable {
     flows: DashMap<FlowKey, FlowEntry>,
 }
 
-impl FlowTable {
-    pub fn new() -> Self {
+impl Default for FlowTable {
+    fn default() -> Self {
         Self {
             flows: DashMap::new(),
         }
+    }
+}
+
+impl FlowTable {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn handle_event(&self, event: FlowEvent) {
@@ -74,9 +82,7 @@ impl FlowTable {
         let to_remove: Vec<FlowKey> = self
             .flows
             .iter()
-            .filter(|e| {
-                e.state == FlowState::Closed && now.duration_since(e.last_seen) > retention
-            })
+            .filter(|e| e.state == FlowState::Closed && now.duration_since(e.last_seen) > retention)
             .map(|e| e.key)
             .collect();
 

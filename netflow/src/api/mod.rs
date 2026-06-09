@@ -1,10 +1,8 @@
 use std::sync::Arc;
-use axum::{
-    routing::get,
-    Router,
-};
-use crate::config::Config;
-use crate::flow_table::FlowTable;
+
+use axum::{Router, routing::get};
+
+use crate::{config::Config, flow_table::FlowTable};
 
 mod flows;
 mod metrics;

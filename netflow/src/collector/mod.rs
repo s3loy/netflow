@@ -1,5 +1,7 @@
 use std::sync::Arc;
+
 use async_trait::async_trait;
+
 use crate::flow_table::FlowTable;
 
 #[cfg(target_os = "linux")]

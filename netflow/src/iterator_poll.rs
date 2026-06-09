@@ -1,10 +1,10 @@
-use std::sync::Arc;
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
+
 use aya::Ebpf;
 use tokio::time::interval;
 use tracing::{debug, info};
-use crate::config::Config;
-use crate::flow_table::FlowTable;
+
+use crate::{config::Config, flow_table::FlowTable};
 
 pub async fn poll_udp_timeouts(
     _bpf: &mut Ebpf,

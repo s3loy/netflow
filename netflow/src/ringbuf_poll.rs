@@ -1,8 +1,9 @@
 use std::sync::Arc;
-use aya::maps::RingBuf;
-use aya::Ebpf;
+
+use aya::{Ebpf, maps::RingBuf};
 use netflow_common::FlowEvent;
 use tracing::{debug, info};
+
 use crate::flow_table::FlowTable;
 
 pub async fn poll_ringbuf(bpf: &mut Ebpf, flow_table: Arc<FlowTable>) -> anyhow::Result<()> {

@@ -166,9 +166,10 @@ impl AppState {
 
 #[cfg(test)]
 mod tests {
+    use netflow_common::{FlowKey, FlowStats};
+
     use super::*;
     use crate::flow_table::FlowState;
-    use netflow_common::{FlowKey, FlowStats};
 
     fn make_flows(n: usize) -> Vec<FlowEntry> {
         (0..n)

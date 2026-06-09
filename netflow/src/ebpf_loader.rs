@@ -1,6 +1,7 @@
-use aya::{include_bytes_aligned, programs::KProbe, Ebpf};
+use aya::{Ebpf, include_bytes_aligned, programs::KProbe};
 use aya_log::EbpfLogger;
 use tracing::{info, warn};
+
 use crate::config::Config;
 
 pub struct EbpfLoader {

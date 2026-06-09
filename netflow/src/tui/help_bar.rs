@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::Rect,
     style::{Color, Style},
     text::{Line, Span},
     widgets::Paragraph,
-    Frame,
 };
 
 /// Render a nano-style bottom help bar with context-aware shortcuts.
@@ -33,8 +33,7 @@ pub fn render(f: &mut Frame, area: Rect, modal_open: bool) {
     };
 
     let line = Line::from(spans);
-    let para = Paragraph::new(line)
-        .style(Style::default().bg(Color::DarkGray).fg(Color::White));
+    let para = Paragraph::new(line).style(Style::default().bg(Color::DarkGray).fg(Color::White));
     f.render_widget(para, area);
 }
 

@@ -1,18 +1,18 @@
 use ratatui::{
-    layout::{Constraint, Rect},
-    style::{Color, Style, Modifier},
-    widgets::{Block, Borders, Row, Table, TableState},
     Frame,
+    layout::{Constraint, Rect},
+    style::{Color, Modifier, Style},
+    widgets::{Block, Borders, Row, Table, TableState},
 };
+
+use super::{app::AppState, format};
 use crate::flow_table::{FlowEntry, FlowState};
-use super::app::AppState;
-use super::format;
 
 /// Render the scrollable flow list.
 pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let header = Row::new(vec![
-        "Proto", "Src IP", "SPort", "Dst IP", "DPort",
-        "↑Pkts", "↓Pkts", "↑Bytes", "↓Bytes", "State",
+        "Proto", "Src IP", "SPort", "Dst IP", "DPort", "↑Pkts", "↓Pkts", "↑Bytes", "↓Bytes",
+        "State",
     ])
     .style(Style::default().add_modifier(Modifier::BOLD));
 
@@ -25,11 +25,7 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         let para = ratatui::widgets::Paragraph::new(empty_text)
             .alignment(ratatui::layout::Alignment::Center)
             .style(Style::default().fg(Color::DarkGray))
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title(title),
-            );
+            .block(Block::default().borders(Borders::ALL).title(title));
         f.render_widget(para, area);
         return;
     }
@@ -78,18 +74,15 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let rows_len = rows.len();
     let table = Table::new(rows, widths)
         .header(header)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title(title),
-        )
+        .block(Block::default().borders(Borders::ALL).title(title))
         .row_highlight_style(Style::default().bg(Color::Blue).fg(Color::White));
 
     f.render_stateful_widget(table, area, &mut table_state);
 
     // Scrollbar hint
     if state.flows.len() > visible {
-        let hint = format!("{}-{}/{}",
+        let hint = format!(
+            "{}-{}/{}",
             state.offset + 1,
             (state.offset + rows_len).min(state.flows.len()),
             state.flows.len()
@@ -101,14 +94,18 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
             width: hint_width.min(area.width.saturating_sub(2)),
             height: 1,
         };
-        let hint_widget = ratatui::widgets::Paragraph::new(hint)
-            .style(Style::default().fg(Color::Gray));
+        let hint_widget =
+            ratatui::widgets::Paragraph::new(hint).style(Style::default().fg(Color::Gray));
         f.render_widget(hint_widget, hint_area);
     }
 }
 
 fn row_from_flow(flow: &FlowEntry) -> Row<'_> {
-    let state_str = if flow.state == FlowState::Active { "Active" } else { "Closed" };
+    let state_str = if flow.state == FlowState::Active {
+        "Active"
+    } else {
+        "Closed"
+    };
 
     Row::new(vec![
         format::proto_str(flow.key.protocol).to_string(),
@@ -127,4 +124,17 @@ fn row_from_flow(flow: &FlowEntry) -> Row<'_> {
 /// Compute how many rows fit in the given area (accounting for borders).
 pub fn visible_row_count_from_height(height: u16) -> usize {
     height.saturating_sub(3) as usize
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_visible_row_count_from_height() {
+        assert_eq!(visible_row_count_from_height(0), 0);
+        assert_eq!(visible_row_count_from_height(3), 0);
+        assert_eq!(visible_row_count_from_height(10), 7);
+        assert_eq!(visible_row_count_from_height(23), 20);
+    }
 }

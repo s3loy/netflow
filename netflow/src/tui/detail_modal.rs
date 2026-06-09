@@ -1,13 +1,13 @@
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph, Wrap},
-    Frame,
 };
+
+use super::{app::AppState, format};
 use crate::flow_table::FlowEntry;
-use super::app::AppState;
-use super::format;
 
 /// Render the detail modal. Returns the number of content lines for scroll limit tracking.
 pub fn render(f: &mut Frame, area: Rect, state: &AppState) -> usize {
@@ -43,8 +43,7 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) -> usize {
         .take(inner.height as usize)
         .collect();
 
-    let para = Paragraph::new(visible_lines)
-        .wrap(Wrap { trim: true });
+    let para = Paragraph::new(visible_lines).wrap(Wrap { trim: true });
 
     f.render_widget(para, inner);
 
@@ -57,8 +56,7 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) -> usize {
             width: hint.len() as u16,
             height: 1,
         };
-        let hint_widget = Paragraph::new(hint)
-            .style(Style::default().fg(Color::Gray));
+        let hint_widget = Paragraph::new(hint).style(Style::default().fg(Color::Gray));
         f.render_widget(hint_widget, hint_area);
     }
 
@@ -96,12 +94,22 @@ fn flow_detail_lines(flow: &FlowEntry) -> Vec<Line<'static>> {
         detail_line("Age", &format_duration_since(flow.created_at)),
         Line::from(""),
         detail_line("Total Packets", &format!("{}", total_pkts)),
-        detail_line("  └─ Sent", &format!("{} (avg {})",
-            flow.stats.packets_sent,
-            format::avg_pkt_size(flow.stats.bytes_sent, flow.stats.packets_sent))),
-        detail_line("  └─ Recv", &format!("{} (avg {})",
-            flow.stats.packets_recv,
-            format::avg_pkt_size(flow.stats.bytes_recv, flow.stats.packets_recv))),
+        detail_line(
+            "  └─ Sent",
+            &format!(
+                "{} (avg {})",
+                flow.stats.packets_sent,
+                format::avg_pkt_size(flow.stats.bytes_sent, flow.stats.packets_sent)
+            ),
+        ),
+        detail_line(
+            "  └─ Recv",
+            &format!(
+                "{} (avg {})",
+                flow.stats.packets_recv,
+                format::avg_pkt_size(flow.stats.bytes_recv, flow.stats.packets_recv)
+            ),
+        ),
         detail_line("Total Bytes", &format::format_bytes(total_bytes)),
         detail_line("  └─ Sent", &format::format_bytes(flow.stats.bytes_sent)),
         detail_line("  └─ Recv", &format::format_bytes(flow.stats.bytes_recv)),
@@ -110,19 +118,32 @@ fn flow_detail_lines(flow: &FlowEntry) -> Vec<Line<'static>> {
     // Add rate info only if flow has been alive long enough
     if duration_secs > 0 {
         lines.push(Line::from(""));
-        lines.push(detail_line("Send Rate", &format!("{}  {}",
-            format::format_pps(flow.stats.packets_sent, duration_secs),
-            format::format_bps(flow.stats.bytes_sent, duration_secs))));
-        lines.push(detail_line("Recv Rate", &format!("{}  {}",
-            format::format_pps(flow.stats.packets_recv, duration_secs),
-            format::format_bps(flow.stats.bytes_recv, duration_secs))));
+        lines.push(detail_line(
+            "Send Rate",
+            &format!(
+                "{}  {}",
+                format::format_pps(flow.stats.packets_sent, duration_secs),
+                format::format_bps(flow.stats.bytes_sent, duration_secs)
+            ),
+        ));
+        lines.push(detail_line(
+            "Recv Rate",
+            &format!(
+                "{}  {}",
+                format::format_pps(flow.stats.packets_recv, duration_secs),
+                format::format_bps(flow.stats.bytes_recv, duration_secs)
+            ),
+        ));
     }
 
     // Traffic ratio bar
     if total_bytes > 0 {
         lines.push(Line::from(""));
         let sent_pct = (flow.stats.bytes_sent as f64 / total_bytes as f64 * 100.0) as u8;
-        lines.push(detail_line("Traffic Split", &format!("{}% sent / {}% recv", sent_pct, 100 - sent_pct)));
+        lines.push(detail_line(
+            "Traffic Split",
+            &format!("{}% sent / {}% recv", sent_pct, 100 - sent_pct),
+        ));
         lines.push(Line::from(format!("  [{}]", traffic_bar(sent_pct))));
     }
 
@@ -152,7 +173,9 @@ fn detail_line(label: &str, value: &str) -> Line<'static> {
     Line::from(vec![
         Span::styled(
             format!("{:<14}", label),
-            Style::default().add_modifier(Modifier::BOLD).fg(Color::Cyan),
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Cyan),
         ),
         Span::raw(value.to_string()),
     ])
@@ -176,4 +199,125 @@ fn centered_rect(width: u16, height: u16, r: Rect) -> Rect {
             Constraint::Length(r.width.saturating_sub(width).div_ceil(2)),
         ])
         .split(popup_layout[1])[1]
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::Instant;
+
+    use super::*;
+    use crate::flow_table::{FlowEntry, FlowState, FlowStats};
+
+    fn sample_flow() -> FlowEntry {
+        FlowEntry {
+            key: netflow_common::FlowKey {
+                src_ip: 0x0A000001,
+                dst_ip: 0x08080808,
+                src_port: 54321,
+                dst_port: u16::to_be(443),
+                protocol: 6,
+            },
+            stats: FlowStats {
+                packets_sent: 10,
+                packets_recv: 20,
+                bytes_sent: 1000,
+                bytes_recv: 2000,
+                ts_start_ns: 0,
+                ts_last_ns: 0,
+            },
+            state: FlowState::Active,
+            created_at: Instant::now(),
+            last_seen: Instant::now(),
+        }
+    }
+
+    #[test]
+    fn test_format_port_known() {
+        assert_eq!(format_port(80), ":80 (HTTP)");
+        assert_eq!(format_port(443), ":443 (HTTPS)");
+    }
+
+    #[test]
+    fn test_format_port_unknown() {
+        assert_eq!(format_port(9999), ":9999");
+    }
+
+    #[test]
+    fn test_traffic_bar_full_sent() {
+        let bar = traffic_bar(100);
+        assert_eq!(bar, "█".repeat(20));
+    }
+
+    #[test]
+    fn test_traffic_bar_half() {
+        let bar = traffic_bar(50);
+        assert_eq!(bar, "█".repeat(10) + &"░".repeat(10));
+    }
+
+    #[test]
+    fn test_traffic_bar_zero() {
+        let bar = traffic_bar(0);
+        assert_eq!(bar, "░".repeat(20));
+    }
+
+    #[test]
+    fn test_centered_rect_basic() {
+        let parent = Rect::new(0, 0, 100, 40);
+        let r = centered_rect(60, 20, parent);
+        assert_eq!(r.width, 60);
+        assert_eq!(r.height, 20);
+        assert_eq!(r.x, 20);
+        assert_eq!(r.y, 10);
+    }
+
+    #[test]
+    fn test_flow_detail_lines_content() {
+        let flow = sample_flow();
+        let lines = flow_detail_lines(&flow);
+        // Should have base lines + rate lines (duration > 0) + traffic split lines
+        assert!(lines.len() >= 15);
+        // Check that protocol and state are present
+        let text: String = lines
+            .iter()
+            .map(|l| l.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(text.contains("Protocol"));
+        assert!(text.contains("TCP"));
+        assert!(text.contains("State"));
+        assert!(text.contains("Active"));
+        assert!(text.contains("Source"));
+        assert!(text.contains("10.0.0.1"));
+        assert!(text.contains("Destination"));
+        assert!(text.contains("8.8.8.8"));
+    }
+
+    #[test]
+    fn test_flow_detail_lines_no_rates_when_zero_duration() {
+        let mut flow = sample_flow();
+        flow.created_at = Instant::now();
+        flow.last_seen = Instant::now();
+        let lines = flow_detail_lines(&flow);
+        let text: String = lines
+            .iter()
+            .map(|l| l.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+        // With zero duration, rate lines should not appear
+        assert!(!text.contains("Send Rate"));
+    }
+
+    #[test]
+    fn test_flow_detail_lines_no_traffic_split_when_zero_bytes() {
+        let mut flow = sample_flow();
+        flow.stats.bytes_sent = 0;
+        flow.stats.bytes_recv = 0;
+        let lines = flow_detail_lines(&flow);
+        let text: String = lines
+            .iter()
+            .map(|l| l.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(!text.contains("Traffic Split"));
+    }
 }
