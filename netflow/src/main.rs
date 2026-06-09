@@ -13,6 +13,8 @@ mod tui;
 
 #[cfg(target_os = "linux")]
 mod ebpf_loader;
+#[cfg(target_os = "linux")]
+mod ringbuf_poll;
 
 use collector::Collector;
 use config::{Cli, Config};

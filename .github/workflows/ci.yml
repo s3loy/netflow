@@ -1,8 +1,9 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
-    branches: [main, "feat/*", "fix/*"]
+    branches: [main]
   pull_request:
     branches: [main]
 
@@ -10,49 +11,50 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  check:
-    name: Check / Fmt / Clippy / Test
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+  check-macos:
+    name: Fmt / Clippy / Check / Test (macOS)
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: cargo fmt --check
-        run: cargo fmt --check
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+      - run: cargo check
+      - run: cargo test --lib
 
-      - name: cargo clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
-
-      - name: cargo check
-        run: cargo check
-
-      - name: cargo test (unit)
-        run: cargo test --lib
-
-  integration:
-    name: Integration Tests (Linux + root)
+  check-linux:
+    name: Build / Test (Linux)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust nightly
-        uses: dtolnay/rust-toolchain@nightly
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: dtolnay/rust-toolchain@nightly
         with:
           components: rust-src
 
-      - name: Install bpf-linker
-        run: cargo install bpf-linker
+      - run: rustup default stable
+
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y libpcap-dev
+
+      - run: |
+          cargo install cargo-binstall --locked
+          cargo binstall bpf-linker --no-confirm --locked
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Run ignored tests
-        run: sudo -E cargo test -- --ignored --nocapture
+      - run: cargo fmt --check
+      - run: cargo build --release
+      - run: cargo test --release --lib
+      - run: sudo -E env "PATH=$PATH" cargo test --release -- --ignored --nocapture

@@ -10,14 +10,7 @@ pub struct EbpfLoader {
 
 impl EbpfLoader {
     pub fn load(_config: &Config) -> anyhow::Result<Self> {
-        #[cfg(debug_assertions)]
-        let mut bpf = Ebpf::load(include_bytes_aligned!(
-            "../../target/bpfel-unknown-none/debug/netflow"
-        ))?;
-        #[cfg(not(debug_assertions))]
-        let mut bpf = Ebpf::load(include_bytes_aligned!(
-            "../../target/bpfel-unknown-none/release/netflow"
-        ))?;
+        let mut bpf = Ebpf::load(include_bytes_aligned!(concat!(env!("OUT_DIR"), "/netflow")))?;
 
         if let Err(e) = EbpfLogger::init(&mut bpf) {
             warn!("failed to initialize eBPF logger: {}", e);

@@ -82,7 +82,9 @@ impl FlowTable {
         let to_remove: Vec<FlowKey> = self
             .flows
             .iter()
-            .filter(|e| e.state == FlowState::Closed && now.duration_since(e.last_seen) > retention)
+            .filter(|e| {
+                e.state == FlowState::Closed && now.duration_since(e.last_seen) >= retention
+            })
             .map(|e| e.key)
             .collect();
 
