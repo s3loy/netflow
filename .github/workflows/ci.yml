@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check-macos:
+    name: Fmt / Clippy / Check / Test (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+      - run: cargo check
+      - run: cargo test --lib
+
+  check-linux:
+    name: Build / Test (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+
+      - run: rustup default stable
+
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y libpcap-dev
+
+      - run: |
+          cargo install cargo-binstall --locked
+          cargo binstall bpf-linker --no-confirm --locked
+
+      - uses: Swatinem/rust-cache@v2
+
+      - run: cargo fmt --check
+      - run: cargo build --release
+      - run: cargo test --release --lib
+      - run: sudo -E env "PATH=$PATH" cargo test --release -- --ignored --nocapture
