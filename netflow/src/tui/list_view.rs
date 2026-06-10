@@ -2,7 +2,7 @@ use ratatui::{
     Frame,
     layout::{Constraint, Rect},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Row, Table, TableState},
+    widgets::{Block, Borders, Row, Table},
 };
 
 use super::{app::AppState, format};
@@ -65,19 +65,13 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         Constraint::Length(8),
     ];
 
-    let mut table_state = TableState::default();
-    if !state.flows.is_empty() {
-        table_state.select(Some(state.selected));
-    }
-
     let title = format!("Flows ({} total)", state.flows.len());
     let rows_len = rows.len();
     let table = Table::new(rows, widths)
         .header(header)
-        .block(Block::default().borders(Borders::ALL).title(title))
-        .row_highlight_style(Style::default().bg(Color::Blue).fg(Color::White));
+        .block(Block::default().borders(Borders::ALL).title(title));
 
-    f.render_stateful_widget(table, area, &mut table_state);
+    f.render_widget(table, area);
 
     // Scrollbar hint
     if state.flows.len() > visible {
@@ -112,7 +106,7 @@ fn row_from_flow(flow: &FlowEntry) -> Row<'_> {
         format::ip_str(flow.key.src_ip),
         format!("{}", flow.key.src_port),
         format::ip_str(flow.key.dst_ip),
-        format!("{}", u16::from_be(flow.key.dst_port)),
+        format!("{}", flow.key.dst_port),
         format!("{}", flow.stats.packets_sent),
         format!("{}", flow.stats.packets_recv),
         format::format_bytes_compact(flow.stats.bytes_sent),

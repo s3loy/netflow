@@ -69,7 +69,7 @@ fn flow_detail_lines(flow: &FlowEntry) -> Vec<Line<'static>> {
     let src_ip = format::ip_str(flow.key.src_ip);
     let dst_ip = format::ip_str(flow.key.dst_ip);
     let src_port = flow.key.src_port;
-    let dst_port = u16::from_be(flow.key.dst_port);
+    let dst_port = flow.key.dst_port;
 
     let duration_secs = flow
         .last_seen
@@ -214,8 +214,9 @@ mod tests {
                 src_ip: 0x0A000001,
                 dst_ip: 0x08080808,
                 src_port: 54321,
-                dst_port: u16::to_be(443),
+                dst_port: 443,
                 protocol: 6,
+                _pad: [0; 3],
             },
             stats: FlowStats {
                 packets_sent: 10,

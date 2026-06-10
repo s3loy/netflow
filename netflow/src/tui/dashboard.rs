@@ -66,7 +66,7 @@ mod tests {
                 src_ip: 0x0A000001,
                 dst_ip: 0x08080808,
                 src_port: 12345,
-                dst_port: u16::to_be(80),
+                dst_port: 80,
                 protocol,
             },
             stats: FlowStats::default(),
