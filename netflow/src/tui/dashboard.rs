@@ -68,6 +68,7 @@ mod tests {
                 src_port: 12345,
                 dst_port: 80,
                 protocol,
+                _pad: [0; 3],
             },
             stats: FlowStats::default(),
             state,
