@@ -8,6 +8,7 @@ pub struct FlowKey {
     pub src_port: u16,
     pub dst_port: u16,
     pub protocol: u8,
+    pub _pad: [u8; 3],
 }
 
 #[repr(C)]

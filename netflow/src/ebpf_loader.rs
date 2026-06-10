@@ -29,7 +29,7 @@ impl EbpfLoader {
             ("netflow_tcp_cleanup_rbuf", "tcp_cleanup_rbuf"),
             ("netflow_tcp_sendmsg", "tcp_sendmsg"),
             ("netflow_udp_sendmsg", "udp_sendmsg"),
-            ("netflow_udp_rcv", "udp_rcv"),
+            ("netflow_udp_rcv", "udp_queue_rcv_one_skb"),
         ];
 
         for (prog_name, fn_name) in probes {

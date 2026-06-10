@@ -59,17 +59,18 @@ fn try_netflow_tcp_set_state(ctx: ProbeContext) -> Result<u32, u32> {
 #[inline(always)]
 fn extract_tcp_5tuple(sk: *mut core::ffi::c_void) -> Result<FlowKey, u32> {
     let sk = sk as *const u8;
-    let src_ip = unsafe { core::ptr::read_unaligned(sk.add(4) as *const u32) };
-    let dst_ip = unsafe { core::ptr::read_unaligned(sk.add(8) as *const u32) };
-    let src_port = unsafe { core::ptr::read_unaligned(sk.add(14) as *const u16) };
-    let dst_port = unsafe { core::ptr::read_unaligned(sk.add(16) as *const u16) };
+    let dst_ip = unsafe { aya_ebpf::helpers::bpf_probe_read_kernel(sk.add(0) as *const u32) }.map_err(|_| 1u32)?;
+    let src_ip = unsafe { aya_ebpf::helpers::bpf_probe_read_kernel(sk.add(4) as *const u32) }.map_err(|_| 1u32)?;
+    let dst_port = unsafe { aya_ebpf::helpers::bpf_probe_read_kernel(sk.add(12) as *const u16) }.map_err(|_| 1u32)?;
+    let src_port = unsafe { aya_ebpf::helpers::bpf_probe_read_kernel(sk.add(14) as *const u16) }.map_err(|_| 1u32)?;
 
     Ok(FlowKey {
-        src_ip,
-        dst_ip,
+        src_ip: u32::from_be(src_ip),
+        dst_ip: u32::from_be(dst_ip),
         src_port,
-        dst_port,
+        dst_port: u16::from_be(dst_port),
         protocol: 6,
+        _pad: [0; 3],
     })
 }
 
@@ -108,6 +109,15 @@ fn try_netflow_tcp_cleanup_rbuf(ctx: ProbeContext) -> Result<u32, u32> {
             (*stats).packets_recv += 1;
             (*stats).ts_last_ns = now;
         }
+    } else {
+        let stats = FlowStats {
+            ts_start_ns: now,
+            ts_last_ns: now,
+            bytes_recv: copied as u64,
+            packets_recv: 1,
+            ..Default::default()
+        };
+        let _ = FLOW_STATS.insert(&key, &stats, 0);
     }
 
     Ok(0)
@@ -138,6 +148,15 @@ fn try_netflow_tcp_sendmsg(ctx: ProbeContext) -> Result<u32, u32> {
             (*stats).packets_sent += 1;
             (*stats).ts_last_ns = now;
         }
+    } else {
+        let stats = FlowStats {
+            ts_start_ns: now,
+            ts_last_ns: now,
+            bytes_sent: size as u64,
+            packets_sent: 1,
+            ..Default::default()
+        };
+        let _ = FLOW_STATS.insert(&key, &stats, 0);
     }
 
     Ok(0)
@@ -146,17 +165,18 @@ fn try_netflow_tcp_sendmsg(ctx: ProbeContext) -> Result<u32, u32> {
 #[inline(always)]
 fn extract_udp_5tuple_send(sk: *mut core::ffi::c_void) -> Result<FlowKey, u32> {
     let sk = sk as *const u8;
-    let src_ip = unsafe { core::ptr::read_unaligned(sk.add(4) as *const u32) };
-    let dst_ip = unsafe { core::ptr::read_unaligned(sk.add(8) as *const u32) };
-    let src_port = unsafe { core::ptr::read_unaligned(sk.add(14) as *const u16) };
-    let dst_port = unsafe { core::ptr::read_unaligned(sk.add(16) as *const u16) };
+    let dst_ip = unsafe { aya_ebpf::helpers::bpf_probe_read_kernel(sk.add(0) as *const u32) }.map_err(|_| 1u32)?;
+    let src_ip = unsafe { aya_ebpf::helpers::bpf_probe_read_kernel(sk.add(4) as *const u32) }.map_err(|_| 1u32)?;
+    let dst_port = unsafe { aya_ebpf::helpers::bpf_probe_read_kernel(sk.add(12) as *const u16) }.map_err(|_| 1u32)?;
+    let src_port = unsafe { aya_ebpf::helpers::bpf_probe_read_kernel(sk.add(14) as *const u16) }.map_err(|_| 1u32)?;
 
     Ok(FlowKey {
-        src_ip,
-        dst_ip,
+        src_ip: u32::from_be(src_ip),
+        dst_ip: u32::from_be(dst_ip),
         src_port,
-        dst_port,
+        dst_port: u16::from_be(dst_port),
         protocol: 17,
+        _pad: [0; 3],
     })
 }
 
@@ -212,7 +232,7 @@ fn try_netflow_udp_rcv(ctx: ProbeContext) -> Result<u32, u32> {
     let skb: *mut core::ffi::c_void = ctx.arg(1).ok_or(1u32)?;
 
     let skb_ptr = skb as *const u8;
-    let len = unsafe { core::ptr::read_unaligned(skb_ptr.add(112) as *const u32) };
+    let len = unsafe { aya_ebpf::helpers::bpf_probe_read_kernel(skb_ptr.add(112) as *const u32) }.map_err(|_| 1u32)?;
 
     if len == 0 {
         return Ok(0);
