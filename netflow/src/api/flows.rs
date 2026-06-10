@@ -30,7 +30,7 @@ impl From<FlowEntry> for FlowResponse {
             src_ip: format!("{}.{}.{}.{}", src_ip[0], src_ip[1], src_ip[2], src_ip[3]),
             dst_ip: format!("{}.{}.{}.{}", dst_ip[0], dst_ip[1], dst_ip[2], dst_ip[3]),
             src_port: entry.key.src_port,
-            dst_port: u16::from_be(entry.key.dst_port),
+            dst_port: entry.key.dst_port,
             protocol: match entry.key.protocol {
                 6 => "tcp".into(),
                 17 => "udp".into(),

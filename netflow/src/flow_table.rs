@@ -77,6 +77,7 @@ impl FlowTable {
         self.flows.get(key).map(|e| e.clone())
     }
 
+    #[allow(dead_code)]
     pub fn gc_closed(&self, retention: Duration) {
         let now = Instant::now();
         let to_remove: Vec<FlowKey> = self
@@ -99,6 +100,7 @@ impl FlowTable {
     /// packet counter in the appropriate direction (`sent` or `recv`).
     /// If the flow does not exist, creates a new `Active` entry with the
     /// initial counters set from this packet.
+    #[allow(dead_code)]
     pub fn upsert_packet(&self, key: FlowKey, bytes: u64, is_sent: bool) {
         use dashmap::mapref::entry::Entry;
         match self.flows.entry(key) {
