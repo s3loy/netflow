@@ -76,6 +76,7 @@ fn decode_flow_id(id: &str) -> Option<netflow_common::FlowKey> {
         src_port: u16::from_be_bytes([decoded[8], decoded[9]]),
         dst_port: u16::from_be_bytes([decoded[10], decoded[11]]),
         protocol: decoded[12],
+        _pad: [0; 3],
     })
 }
 
@@ -92,8 +93,9 @@ mod tests {
                 src_ip: 0x0A000001,
                 dst_ip: 0x08080808,
                 src_port: 54321,
-                dst_port: u16::to_be(443),
+                dst_port: 443,
                 protocol,
+                _pad: [0; 3],
             },
             stats: FlowStats {
                 packets_sent: 10,

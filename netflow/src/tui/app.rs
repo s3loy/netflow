@@ -180,6 +180,7 @@ mod tests {
                     src_port: i as u16,
                     dst_port: 0,
                     protocol: 6,
+                    _pad: [0; 3],
                 },
                 stats: FlowStats::default(),
                 state: FlowState::Active,

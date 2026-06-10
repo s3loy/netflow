@@ -150,6 +150,7 @@ mod tests {
             src_port: 54321,
             dst_port: 443,
             protocol: 6,
+            _pad: [0; 3],
         }
     }
 

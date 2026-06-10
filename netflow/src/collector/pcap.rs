@@ -212,6 +212,7 @@ fn parse_packet_data(data: &[u8], local_ips: &[u32]) -> Option<(FlowKey, u64, bo
         src_port,
         dst_port,
         protocol,
+        _pad: [0; 3],
     };
 
     // Count IP payload (total_len - IP header) as flow bytes.
